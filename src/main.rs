@@ -18,7 +18,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for host in hosts["hosts"].as_array().unwrap() {
             let host_tags: Vec<&str> = host["tags"].as_array().unwrap().iter().map(|entry| entry.as_str().unwrap()).collect();
 
-            match iters_have_common_entries(&task_tags, &host_tags) {
+            match vecs_have_common_entries(&task_tags, &host_tags) {
                 true => println!("processing {}", host["title"]),
                 false => println!("skipping {}", host["title"])
             }
@@ -28,9 +28,17 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn iters_have_common_entries(iter1: &Vec<&str>, iter2: &Vec<&str>) -> bool {
-    for entry1 in iter1 {
-        for entry2 in iter2 {
+#[test]
+fn function_vecs_have_common_entries() {
+    assert_eq!(vecs_have_common_entries(&vec!["test1"], &vec!["test2"]), false);
+    assert_eq!(vecs_have_common_entries(&vec!["test1", "test2", "test3"], &vec!["test4", "test5", "test6"]), false);
+    assert_eq!(vecs_have_common_entries(&vec!["test1"], &vec!["test1"]), true);
+    assert_eq!(vecs_have_common_entries(&vec!["test1", "test2", "test3"], &vec!["test4", "test2", "test6"]), true);
+}
+
+fn vecs_have_common_entries(vec1: &Vec<&str>, vec2: &Vec<&str>) -> bool {
+    for entry1 in vec1 {
+        for entry2 in vec2 {
             if entry1 == entry2 {
                 return true;
             }
