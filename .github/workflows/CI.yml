@@ -19,6 +19,8 @@ jobs:
     if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
     steps:
       - uses: actions/checkout@v2
+      - name: Install libssh
+        run: apt-get install --assume-yes libssh-dev
       - name: Build
         run: cargo build --verbose
       - name: Run tests
