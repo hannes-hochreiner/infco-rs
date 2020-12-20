@@ -1,3 +1,5 @@
+.. image:: https://github.com/hannes-hochreiner/infco-rs/workflows/CI/badge.svg
+
 InfCo-RS
 ~~~~~~~~
 
