@@ -1,0 +1,2 @@
+[target.arm-unknown-linux-gnueabihf]
+image = "docker.io/h0h4/docker-rust-cross-infco-rs:main"
