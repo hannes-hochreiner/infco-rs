@@ -21,4 +21,3 @@ TODO
   * Add ssh port.
   * Add support for sudo locally (ignore for ssh).
   * Add task layer.
-  * Add logging.

@@ -8,15 +8,11 @@ mod service;
 use service::Service;
 mod error;
 use error::InfcoError;
+use log::{debug, error, info};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let mut ssh_service = ssh_service::SshService::new()?;
-    // println!("{}", ssh_service.run("ls -la /home").await?);
-
-    // let mut local_service = local_service::LocalService::new()?;
-    // println!("{}", local_service.run("ls -la /home").await?);
-    // program starts here
+    env_logger::init();
     let matches = get_matches();
 
     if let Some(matches) = matches.subcommand_matches("process") {
@@ -30,10 +26,10 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match vecs_have_common_entries(&task_tags, &host_tags) {
                 true => {
-                    println!("processing {}", host["title"]);
+                    info!("processing host {}", host["title"]);
                     process_tasks_for_host(&tasks["tasks"].as_array().unwrap(), host).await?;
                 },
-                false => println!("skipping {}", host["title"])
+                false => info!("skipping host {}", host["title"])
             }
         }
     }
@@ -60,6 +56,7 @@ async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), 
     };
 
     for task in tasks {
+        info!("task {} ({})", task["title"], task["type"]);
         match task["type"].as_str() {
             Some("exec") => {
                 context.run(task["config"]["command"].as_str().unwrap().to_string()).await?;
