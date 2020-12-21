@@ -19,8 +19,12 @@ jobs:
     if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
     steps:
       - uses: actions/checkout@v2
-      - name: Install libssh
-        run: sudo apt-get install --assume-yes libssh-dev
+      - name: Install libssh prerequisites
+        run: sudo apt-get update; sudo apt-get install git cmake openssl libssl-dev zlib1g-dev libcmocka-dev libsocket-wrapper libnss-wrapper libpam-wrapper libuid-wrapper -y
+      - name: Clone libssh
+        run: sudo git clone --depth 1 --branch libssh-0.9.5 https://git.libssh.org/projects/libssh.git /opt/libssh
+      - name: Compile libssh
+        run: cd /opt/libssh; sudo mkdir build; cd build; sudo cmake /opt/libssh -DUNIT_TESTING=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release; sudo make; sudo make install
       - name: Build
         run: cargo build --verbose
       - name: Run tests
