@@ -1,12 +1,22 @@
 mod ssh;
-use ssh::session::{Session, Request, RequestType};
+use ssh::ssh_service;
 mod local;
-use local::session::Session as LocalSession;
+use local::local_service;
 use tokio::fs;
 use serde_json::{Value};
+mod service;
+use service::Service;
+mod error;
+use error::InfcoError;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // let mut ssh_service = ssh_service::SshService::new()?;
+    // println!("{}", ssh_service.run("ls -la /home").await?);
+
+    // let mut local_service = local_service::LocalService::new()?;
+    // println!("{}", local_service.run("ls -la /home").await?);
+    // program starts here
     let matches = get_matches();
 
     if let Some(matches) = matches.subcommand_matches("process") {
@@ -19,9 +29,43 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let host_tags: Vec<&str> = host["tags"].as_array().unwrap().iter().map(|entry| entry.as_str().unwrap()).collect();
 
             match vecs_have_common_entries(&task_tags, &host_tags) {
-                true => println!("processing {}", host["title"]),
+                true => {
+                    println!("processing {}", host["title"]);
+                    process_tasks_for_host(&tasks["tasks"].as_array().unwrap(), host).await?;
+                },
                 false => println!("skipping {}", host["title"])
             }
+        }
+    }
+
+    Ok(())
+}
+
+async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), Box<dyn std::error::Error>> {
+    let mut context: Box<dyn Service> = match host["context"]["type"].as_str() {
+        Some("ssh") => {
+            let host_name = match host["context"]["config"]["host"].as_str() {
+                Some(s) => s,
+                None => return Err(Box::new(InfcoError::new(String::from("no host specified"))))
+            };
+            let user_name = match host["context"]["config"]["username"].as_str() {
+                Some(s) => s,
+                None => return Err(Box::new(InfcoError::new(String::from("no user specified"))))
+            };
+            Box::new(ssh_service::SshService::new(host_name.into(), user_name.into())?)
+        },
+        Some("local") => Box::new(local_service::LocalService::new()?),
+        Some(name) => return Err(Box::new(InfcoError::new(format!("unknown context type \"{}\"", name)))),
+        None => return Err(Box::new(InfcoError::new(String::from("no context type found"))))
+    };
+
+    for task in tasks {
+        match task["type"].as_str() {
+            Some("exec") => {
+                context.run(task["config"]["command"].as_str().unwrap().to_string()).await?;
+            },
+            Some(name) => return Err(Box::new(InfcoError::new(format!("unknown task type \"{}\"", name)))),
+            None => return Err(Box::new(InfcoError::new(String::from("no task type found"))))
         }
     }
 
