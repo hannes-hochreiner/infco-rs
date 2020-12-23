@@ -64,4 +64,12 @@ impl Service for SshService {
     async fn run(&mut self, command: String) -> Result<String, Box<dyn std::error::Error>> {
         self.send_command(Command::Command{command: command}).await
     }
+
+    async fn file_read(&mut self, path: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        Ok(vec![0])
+    }
+
+    async fn file_write(&mut self, path: String, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
 }

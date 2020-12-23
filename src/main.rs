@@ -10,7 +10,7 @@ mod error;
 use error::InfcoError;
 use log::{debug, error, info};
 mod task;
-use task::command;
+use task::{command, file_transfer};
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,6 +62,9 @@ async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), 
         match task["type"].as_str() {
             Some("command") => {
                 command::run(&mut context, &task["config"]).await?;
+            },
+            Some("fileTransfer") => {
+                file_transfer::run(&mut context, &task["config"]).await?;
             },
             Some(name) => {
                 error!("unknown task type \"{}\"", name);
