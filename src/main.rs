@@ -9,6 +9,8 @@ use service::Service;
 mod error;
 use error::InfcoError;
 use log::{debug, error, info};
+mod task;
+use task::command;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -58,11 +60,17 @@ async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), 
     for task in tasks {
         info!("task {} ({})", task["title"], task["type"]);
         match task["type"].as_str() {
-            Some("exec") => {
-                context.run(task["config"]["command"].as_str().unwrap().to_string()).await?;
+            Some("command") => {
+                command::run(&mut context, &task["config"]).await?;
             },
-            Some(name) => return Err(Box::new(InfcoError::new(format!("unknown task type \"{}\"", name)))),
-            None => return Err(Box::new(InfcoError::new(String::from("no task type found"))))
+            Some(name) => {
+                error!("unknown task type \"{}\"", name);
+                return Err(Box::new(InfcoError::new(format!("unknown task type \"{}\"", name))))
+            },
+            None => {
+                error!("no task type found");
+                return Err(Box::new(InfcoError::new(String::from("no task type found"))))
+            }
         }
     }
 

@@ -12,5 +12,4 @@ TODO
 * Rename services to contexts.
 * Add ssh port.
 * Add support for sudo locally (ignore for ssh).
-* Add task layer.
 * Add meaningful output type for tasks.
