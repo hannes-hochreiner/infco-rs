@@ -6,8 +6,9 @@ use std::ffi::{CString};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::string::{String};
-use tokio::prelude::*;
+// use tokio::prelude::*;
 use tokio::net::{TcpListener};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use hyper;
 
 pub struct Session {
