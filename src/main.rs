@@ -34,6 +34,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 false => info!("skipping host {}", host["title"])
             }
         }
+    } else if let Some(matches) = matches.subcommand_matches("fingerprint") {
+        let host = matches.value_of("host").unwrap();
+        let user = matches.value_of("user").unwrap();
+
+        println!("{}", ssh_service::SshService::get_server_fingerprint(host, user)?);
     }
 
     Ok(())
@@ -42,15 +47,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), Box<dyn std::error::Error>> {
     let mut context: Box<dyn Service> = match host["context"]["type"].as_str() {
         Some("ssh") => {
-            let host_name = match host["context"]["config"]["host"].as_str() {
-                Some(s) => s,
-                None => return Err(Box::new(InfcoError::new(String::from("no host specified"))))
-            };
-            let user_name = match host["context"]["config"]["username"].as_str() {
-                Some(s) => s,
-                None => return Err(Box::new(InfcoError::new(String::from("no user specified"))))
-            };
-            Box::new(ssh_service::SshService::new(host_name.into(), user_name.into())?)
+            let host_name = host["context"]["config"]["host"].as_str().ok_or(InfcoError::new(String::from("no host specified")))?;
+            let user_name = host["context"]["config"]["username"].as_str().ok_or(InfcoError::new(String::from("no user specified")))?;
+            let hash =host["context"]["config"]["serverPublicKeyHash"].as_str().ok_or(InfcoError::new("no hash specified".into()))?;
+
+            Box::new(ssh_service::SshService::new(host_name.into(), user_name.into(), hash.into())?)
         },
         Some("local") => Box::new(local_service::LocalService::new()?),
         Some(name) => return Err(Box::new(InfcoError::new(format!("unknown context type \"{}\"", name)))),
@@ -107,6 +108,18 @@ fn get_matches() -> clap::ArgMatches<'static> {
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
+        .subcommand(SubCommand::with_name("fingerprint")
+            .about("get the fingerprint of a host")
+            .arg(Arg::with_name("host")
+                .short("h")
+                .takes_value(true)
+                .required(true)
+                .help("host name"))
+            .arg(Arg::with_name("user")
+                .short("u")
+                .takes_value(true)
+                .required(true)
+                .help("username")))
         .subcommand(SubCommand::with_name("process")
             .about("process a combination of task and host files")
             .arg(Arg::with_name("hosts")

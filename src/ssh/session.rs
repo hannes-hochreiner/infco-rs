@@ -2,11 +2,10 @@ use super::wrapper;
 use super::wrapper::{ssh_options};
 use super::channel;
 use super::error::SshError;
-use std::ffi::{CString};
+use std::ffi::{CString, CStr};
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::string::{String};
-// use tokio::prelude::*;
 use tokio::net::{TcpListener};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use hyper;
@@ -27,13 +26,29 @@ pub struct Request {
 }
 
 impl Session {
-    pub fn new_with_host_user(host: &str, user: &str) -> Result<Session, Box<dyn Error>> {
+    pub fn get_server_fingerprint(host: &str, user: &str) -> Result<String, Box<dyn Error>> {
         let mut session = Session::new().unwrap();
 
         session.set_option(ssh_options::SshOptionsHost, host.to_string()).unwrap();
         session.set_option(ssh_options::SshOptionsUser, user.to_string()).unwrap();
         session.connect().unwrap();
-        session.verify_server().unwrap();
+
+        session.get_server_hash()
+    }
+
+    pub fn new_with_host_user_hash(host: &str, user: &str, hash: &str) -> Result<Session, Box<dyn Error>> {
+        let mut session = Session::new().unwrap();
+
+        session.set_option(ssh_options::SshOptionsHost, host.to_string()).unwrap();
+        session.set_option(ssh_options::SshOptionsUser, user.to_string()).unwrap();
+        session.connect().unwrap();
+
+        let fingerprint = session.get_server_hash()?;
+
+        if hash != fingerprint {
+            return Err(SshError::new(format!("server public key hash did not match; expected: \"{}\"; found: \"{}\"", hash, fingerprint)).into());
+        }
+
         session.authenticate().unwrap();
 
         Ok(session)
@@ -143,6 +158,32 @@ impl Session {
             wrapper::ssh_known_hosts::SshKnownHostsOk => Ok(()),
             _ => Err(Box::new(SshError::new(String::from("server verification failed"))))
         }
+    }
+
+    fn get_server_hash(&mut self) -> Result<String, Box<dyn Error>> {
+        let mut key = 0 as *mut libc::c_void;
+
+        match unsafe { wrapper::ssh_get_server_publickey(*self.ptr.lock().unwrap(), &mut key) } {
+            wrapper::ssh_result::SshOk => {},
+            _ => return Err(Box::new(SshError::new(String::from("error getting server public key"))))
+        }
+
+        let mut server_hash = 0 as *mut libc::c_char;
+        let mut hash_length = 0 as libc::size_t;
+
+        match unsafe { wrapper::ssh_get_publickey_hash(key, wrapper::ssh_publickey_hash_type::SshPublickeyHashSha256, &mut server_hash, &mut hash_length) } {
+            wrapper::ssh_result::SshOk => {},
+            _ => return Err(Box::new(SshError::new(String::from("error getting public key hash"))))
+        }
+
+        let fingerprint_ptr = unsafe { wrapper::ssh_get_fingerprint_hash(wrapper::ssh_publickey_hash_type::SshPublickeyHashSha256, server_hash, hash_length) };
+        let fingerprint = String::from(unsafe { CStr::from_ptr(fingerprint_ptr) }.to_str()?);
+
+        unsafe { wrapper::ssh_string_free_char(fingerprint_ptr) };
+        unsafe { wrapper::ssh_clean_pubkey_hash(&mut server_hash) };
+        unsafe { wrapper::ssh_key_free(key) };
+
+        Ok(fingerprint)
     }
 
     fn get_channel(&mut self) -> Result<channel::Channel, Box<dyn Error>> {

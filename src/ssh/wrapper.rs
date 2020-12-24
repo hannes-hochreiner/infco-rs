@@ -82,6 +82,13 @@ pub enum ssh_options {
     SshOptionsRekeyTime,
 }
 
+#[repr(C)]
+pub enum ssh_publickey_hash_type {
+    SshPublickeyHashSha1,
+    SshPublickeyHashMd5,
+    SshPublickeyHashSha256
+}
+
 use std::sync::{Arc, Mutex};
 
 #[link(name = "ssh")]
@@ -108,4 +115,10 @@ extern {
     pub fn ssh_channel_open_forward(channel: *mut libc::c_void, remotehost: *const libc::c_char, remoteport: libc::c_int, sourcehost: *const libc::c_char, localport: libc::c_int) -> ssh_result;
     pub fn ssh_channel_is_eof(channel: *mut libc::c_void) -> libc::c_int;
     pub fn ssh_channel_is_open(channel: *mut libc::c_void) -> libc::c_int;
+    pub fn ssh_get_server_publickey(session: *mut libc::c_void, key: *mut *mut libc::c_void) -> ssh_result;
+    pub fn ssh_get_publickey_hash(key: *const libc::c_void, hash_type: ssh_publickey_hash_type, hash: *mut *mut libc::c_char, length: *mut libc::size_t) -> ssh_result;
+    pub fn ssh_get_fingerprint_hash(hash_type: ssh_publickey_hash_type, hash: *const libc::c_char, len: libc::size_t) -> *const libc::c_char;
+    pub fn ssh_clean_pubkey_hash(hash: *mut *mut libc::c_char);
+    pub fn ssh_key_free(key: *mut libc::c_void);
+    pub fn ssh_string_free_char(s: *const libc::c_char);
 }

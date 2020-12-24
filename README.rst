@@ -13,3 +13,4 @@ TODO
 * Add ssh port.
 * Add support for sudo locally (ignore for ssh).
 * Add meaningful output type for tasks.
+* Switch to ssh_pki_import_pubkey_file() and ssh_userauth_publickey().

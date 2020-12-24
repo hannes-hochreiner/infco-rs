@@ -15,14 +15,18 @@ pub struct SshService {
 }
 
 impl SshService {
-    pub fn new(host: String, user: String) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn get_server_fingerprint(host: &str, user: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Session::get_server_fingerprint(host, user)
+    }
+
+    pub fn new(host: String, user: String, hash: String) -> Result<Self, Box<dyn std::error::Error>> {
         let (cmd_tx, mut cmd_rx) = mpsc::channel::<(Command, oneshot::Sender<String>)>(100);
         tokio::task::spawn_blocking(|| {
             let rt  = Runtime::new().unwrap();
             let local = task::LocalSet::new();
     
             local.block_on(&rt, async move {
-                let mut session = Session::new_with_host_user(&*host, &*user).unwrap();
+                let mut session = Session::new_with_host_user_hash(&*host, &*user, &*hash).unwrap();
     
                 while let Some((cmd, response)) = cmd_rx.recv().await {
                     match cmd {
