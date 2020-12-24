@@ -8,7 +8,7 @@ mod service;
 use service::Service;
 mod error;
 use error::InfcoError;
-use log::{debug, error, info};
+use log::{error, info};
 mod task;
 use task::{command, file_transfer};
 

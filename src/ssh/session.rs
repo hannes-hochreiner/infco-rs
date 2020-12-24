@@ -1,5 +1,5 @@
 use super::wrapper;
-use super::wrapper::{ssh_options};
+use super::wrapper::{ssh_options, ssh_result};
 use super::channel;
 use super::error::SshError;
 use std::ffi::{CString, CStr};
@@ -9,6 +9,7 @@ use std::string::{String};
 use tokio::net::{TcpListener};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use hyper;
+use super::sftp_session::SftpSession;
 
 pub struct Session {
     ptr: Arc<Mutex<*mut libc::c_void>>,
@@ -61,6 +62,20 @@ impl Session {
         channel.request_exec(command)?;
         channel.send_eof()?;
         Ok(String::from_utf8(channel.read()?)?)
+    }
+
+    pub fn file_read(&mut self, path: String) -> Result<Vec<u8>, Box<dyn Error>> {
+        let sftp_session = self.get_sftp_session()?;
+        let sftp_file = sftp_session.open_file(&CString::new(path)?, libc::O_RDONLY, 0)?;
+
+        sftp_file.read()
+    }
+
+    pub fn file_write(&mut self, path: String, data: Vec<u8>) -> Result<(), Box<dyn Error>> {
+        let sftp_session = self.get_sftp_session()?;
+        let mut sftp_file = sftp_session.open_file(&CString::new(path)?, libc::O_WRONLY | libc::O_CREAT | libc::O_TRUNC, libc::S_IRUSR | libc::S_IWUSR | libc::S_IRGRP | libc::S_IROTH)?;
+
+        sftp_file.write(&data[..])
     }
 
     pub async fn run_socket_request(&mut self, request_type: RequestType, request: Request) -> Result<String, Box<dyn Error>> {
@@ -195,6 +210,23 @@ impl Session {
             Ok(channel::Channel {
                 ptr: Arc::new(Mutex::new(ptr)),
             })
+        }
+    }
+
+    fn get_sftp_session(&mut self) -> Result<SftpSession, Box<dyn Error>> {
+        let ptr = unsafe { wrapper::sftp_new(*self.ptr.lock().unwrap()) };
+
+        if ptr.is_null() {
+            return Err(SshError::new(String::from("could not create sftp session")).into());
+        }
+        
+        match unsafe { wrapper::sftp_init(ptr) } {
+            ssh_result::SshOk => {
+                Ok(SftpSession {
+                    ptr: Arc::new(Mutex::new(ptr)),
+                })
+            },
+            _ => Err(SshError::new(String::from("error initializing sftp session")).into())
         }
     }
 }

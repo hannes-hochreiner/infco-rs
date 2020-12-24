@@ -89,6 +89,15 @@ pub enum ssh_publickey_hash_type {
     SshPublickeyHashSha256
 }
 
+#[repr(C)]
+pub enum sftp_access_type {
+    ReadOnly = 0,
+    WriteOnly = 1,
+    ReadWrite = 2,
+    Create = 100,
+    Truncate = 1000
+}
+
 use std::sync::{Arc, Mutex};
 
 #[link(name = "ssh")]
@@ -121,4 +130,14 @@ extern {
     pub fn ssh_clean_pubkey_hash(hash: *mut *mut libc::c_char);
     pub fn ssh_key_free(key: *mut libc::c_void);
     pub fn ssh_string_free_char(s: *const libc::c_char);
+    // sftp
+    pub fn sftp_new(ssh_session: *mut libc::c_void) -> *mut libc::c_void;
+    // sftp session
+    pub fn sftp_init(sftp_session: *mut libc::c_void) -> ssh_result;
+    pub fn sftp_open(sftp_session: *mut libc::c_void, file: *const libc::c_char, accesstype: libc::c_int, mode: libc::mode_t) -> *mut libc::c_void;
+    pub fn sftp_free(sftp_session: *mut libc::c_void);
+    // sftp file
+    pub fn sftp_read(sftp_file: *mut libc::c_void, buf: *mut libc::c_void, count: libc::size_t) -> libc::ssize_t;
+    pub fn sftp_write(sftp_file: *mut libc::c_void, buf: *const libc::c_void, count: libc::size_t) -> libc::ssize_t;
+    pub fn sftp_close(sftp_file: *mut libc::c_void) -> ssh_result;
 }
