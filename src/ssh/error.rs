@@ -7,9 +7,9 @@ pub struct SshError {
 }
 
 impl SshError {
-    pub fn new(description: String) -> SshError {
+    pub fn new(description: &str) -> SshError {
         SshError {
-            description: description
+            description: description.into()
         }
     }
 }

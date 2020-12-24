@@ -7,9 +7,9 @@ pub struct LocalError {
 }
 
 impl LocalError {
-    pub fn new(description: String) -> LocalError {
+    pub fn new(description: &str) -> LocalError {
         LocalError {
-            description: description
+            description: description.into()
         }
     }
 }

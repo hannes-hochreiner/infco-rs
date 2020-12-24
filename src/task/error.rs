@@ -7,9 +7,9 @@ pub struct TaskError {
 }
 
 impl TaskError {
-    pub fn new(description: String) -> Self {
+    pub fn new(description: &str) -> Self {
         Self {
-            description: description
+            description: description.into()
         }
     }
 }

@@ -70,7 +70,7 @@ impl Service for SshService {
     async fn run(&mut self, command: String) -> Result<String, Box<dyn std::error::Error>> {
         match self.send_command(Command::Command{command: command}).await {
             Ok(Some(res)) => Ok(String::from_utf8(res)?),
-            Ok(None) => Err(SshError::new(String::from("unexpected result")).into()),
+            Ok(None) => Err(SshError::new("unexpected result").into()),
             Err(err) => Err(err)
         }
     }
@@ -78,14 +78,14 @@ impl Service for SshService {
     async fn file_read(&mut self, path: String) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         match self.send_command(Command::FileRead{path: path}).await {
             Ok(Some(data)) => Ok(data),
-            Ok(None) => Err(SshError::new(String::from("no data read")).into()),
+            Ok(None) => Err(SshError::new("no data read").into()),
             Err(err) => Err(err)
         }
     }
 
     async fn file_write(&mut self, path: String, data: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
         match self.send_command(Command::FileWrite{path: path, data: data}).await {
-            Ok(Some(_)) => Err(SshError::new(String::from("received unexpected result while writing data")).into()),
+            Ok(Some(_)) => Err(SshError::new("received unexpected result while writing data").into()),
             Ok(None) => Ok(()),
             Err(err) => Err(err)
         }

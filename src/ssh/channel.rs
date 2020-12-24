@@ -12,21 +12,21 @@ impl Channel {
     pub fn open_session(&mut self) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_channel_open_session(*self.ptr.lock().unwrap()) } {
             wrapper::ssh_result::SshOk => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("error opening session for channel"))))
+            _ => Err(SshError::new("error opening session for channel").into())
         }
     }
 
     pub fn request_exec(&mut self, cmd: &str) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_channel_request_exec(*self.ptr.lock().unwrap(), CString::new(cmd)?.as_ptr() as *const libc::c_void) } {
             wrapper::ssh_result::SshOk => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("error executing request"))))
+            _ => Err(SshError::new("error executing request").into())
         }
     }
 
     pub fn send_eof(&mut self) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_channel_send_eof(*self.ptr.lock().unwrap()) } {
             wrapper::ssh_result::SshOk => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("error sending eof"))))
+            _ => Err(SshError::new("error sending eof").into())
         }
     }
     
@@ -39,7 +39,7 @@ impl Channel {
         ) } {
             wrapper::ssh_result::SshOk => Ok(()),
             _ => {
-                Err(Box::new(SshError::new(String::from("error forwarding socket"))))
+                Err(SshError::new("error forwarding socket").into())
             }
         }
     }
@@ -54,7 +54,7 @@ impl Channel {
         ) } {
             wrapper::ssh_result::SshOk => Ok(()),
             _ => {
-                Err(Box::new(SshError::new(String::from("error forwarding for channel"))))
+                Err(SshError::new("error forwarding for channel").into())
             }
         }
     }
@@ -64,9 +64,9 @@ impl Channel {
         let len_written = unsafe { wrapper::ssh_channel_write(*self.ptr.lock().unwrap(), CString::new(data)?.as_ptr(), len as u32) };
 
         if len_written < 0 {
-            Err(Box::new(SshError::new(String::from("error writing to channel"))))
+            Err(SshError::new("error writing to channel").into())
         } else if len != len_written as usize {
-            Err(Box::new(SshError::new(String::from("wrong number of bytes written"))))
+            Err(SshError::new("wrong number of bytes written").into())
         } else {
             Ok(())
         }
@@ -86,7 +86,7 @@ impl Channel {
                 out.reserve(bytes_read as usize);
                 out.append(&mut dst);
             } else if bytes_read < 0 {
-                return Err(Box::new(SshError::new(String::from("error reading from channel"))))
+                return Err(SshError::new("error reading from channel").into())
             }
         }
 

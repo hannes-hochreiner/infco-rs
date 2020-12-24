@@ -47,7 +47,7 @@ impl Session {
         let fingerprint = session.get_server_hash()?;
 
         if hash != fingerprint {
-            return Err(SshError::new(format!("server public key hash did not match; expected: \"{}\"; found: \"{}\"", hash, fingerprint)).into());
+            return Err(SshError::new(&*format!("server public key hash did not match; expected: \"{}\"; found: \"{}\"", hash, fingerprint)).into());
         }
 
         session.authenticate().unwrap();
@@ -132,7 +132,7 @@ impl Session {
         let ptr = unsafe { wrapper::ssh_new() };
 
         if ptr.is_null() {
-            return Err(Box::new(SshError::new(String::from("error creating session"))));
+            return Err(SshError::new("error creating session").into());
         }
 
         let session = Session {
@@ -148,7 +148,7 @@ impl Session {
                 option_type as i32,
                 CString::new(val)?.as_ptr() as *const libc::c_void)
         } != 0 {
-            Err(Box::new(SshError::new(String::from("could not set option"))))
+            Err(SshError::new("could not set option").into())
         } else {
             Ok(())
         }
@@ -157,21 +157,21 @@ impl Session {
     fn connect(&mut self) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_connect(*self.ptr.lock().unwrap()) } {
             wrapper::ssh_result::SshOk => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("connection failed"))))
+            _ => Err(SshError::new("connection failed").into())
         }
     }
 
     fn authenticate(&mut self) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_userauth_publickey_auto(*self.ptr.lock().unwrap(), std::ptr::null(), std::ptr::null()) } {
             wrapper::ssh_auth_result::SshAuthSuccess => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("authentication failed"))))
+            _ => Err(SshError::new("authentication failed").into())
         }
     }
 
     fn verify_server(&mut self) -> Result<(), Box<dyn Error>> {
         match unsafe { wrapper::ssh_session_is_known_server(*self.ptr.lock().unwrap()) } {
             wrapper::ssh_known_hosts::SshKnownHostsOk => Ok(()),
-            _ => Err(Box::new(SshError::new(String::from("server verification failed"))))
+            _ => Err(SshError::new("server verification failed").into())
         }
     }
 
@@ -180,7 +180,7 @@ impl Session {
 
         match unsafe { wrapper::ssh_get_server_publickey(*self.ptr.lock().unwrap(), &mut key) } {
             wrapper::ssh_result::SshOk => {},
-            _ => return Err(Box::new(SshError::new(String::from("error getting server public key"))))
+            _ => return Err(SshError::new("error getting server public key").into())
         }
 
         let mut server_hash = 0 as *mut libc::c_char;
@@ -188,7 +188,7 @@ impl Session {
 
         match unsafe { wrapper::ssh_get_publickey_hash(key, wrapper::ssh_publickey_hash_type::SshPublickeyHashSha256, &mut server_hash, &mut hash_length) } {
             wrapper::ssh_result::SshOk => {},
-            _ => return Err(Box::new(SshError::new(String::from("error getting public key hash"))))
+            _ => return Err(SshError::new("error getting public key hash").into())
         }
 
         let fingerprint_ptr = unsafe { wrapper::ssh_get_fingerprint_hash(wrapper::ssh_publickey_hash_type::SshPublickeyHashSha256, server_hash, hash_length) };
@@ -205,7 +205,7 @@ impl Session {
         let ptr = unsafe { wrapper::ssh_channel_new(*self.ptr.lock().unwrap()) };
 
         if ptr.is_null() {
-            Err(Box::new(SshError::new(String::from("could not create channel"))))
+            Err(SshError::new("could not create channel").into())
         } else {
             Ok(channel::Channel {
                 ptr: Arc::new(Mutex::new(ptr)),
@@ -217,7 +217,7 @@ impl Session {
         let ptr = unsafe { wrapper::sftp_new(*self.ptr.lock().unwrap()) };
 
         if ptr.is_null() {
-            return Err(SshError::new(String::from("could not create sftp session")).into());
+            return Err(SshError::new("could not create sftp session").into());
         }
         
         match unsafe { wrapper::sftp_init(ptr) } {
@@ -226,7 +226,7 @@ impl Session {
                     ptr: Arc::new(Mutex::new(ptr)),
                 })
             },
-            _ => Err(SshError::new(String::from("error initializing sftp session")).into())
+            _ => Err(SshError::new("error initializing sftp session").into())
         }
     }
 }

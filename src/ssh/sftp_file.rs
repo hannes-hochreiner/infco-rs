@@ -26,7 +26,7 @@ impl SftpFile {
         }
 
         if bytes_read < 0 {
-            Err(SshError::new(String::from("error reading file")).into())
+            Err(SshError::new("error reading file").into())
         } else {
             Ok(out)
         }
@@ -38,7 +38,7 @@ impl SftpFile {
         if bytes_written == data.len() as isize {
             Ok(())
         } else {
-            Err(SshError::new(String::from("error writing file")).into())
+            Err(SshError::new("error writing file").into())
         } 
     }
 }

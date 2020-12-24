@@ -47,15 +47,15 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), Box<dyn std::error::Error>> {
     let mut context: Box<dyn Service> = match host["context"]["type"].as_str() {
         Some("ssh") => {
-            let host_name = host["context"]["config"]["host"].as_str().ok_or(InfcoError::new(String::from("no host specified")))?;
-            let user_name = host["context"]["config"]["username"].as_str().ok_or(InfcoError::new(String::from("no user specified")))?;
-            let hash =host["context"]["config"]["serverPublicKeyHash"].as_str().ok_or(InfcoError::new("no hash specified".into()))?;
+            let host_name = host["context"]["config"]["host"].as_str().ok_or(InfcoError::new("no host specified"))?;
+            let user_name = host["context"]["config"]["username"].as_str().ok_or(InfcoError::new("no user specified"))?;
+            let hash =host["context"]["config"]["serverPublicKeyHash"].as_str().ok_or(InfcoError::new("no hash specified"))?;
 
             Box::new(ssh_service::SshService::new(host_name.into(), user_name.into(), hash.into())?)
         },
         Some("local") => Box::new(local_service::LocalService::new()?),
-        Some(name) => return Err(Box::new(InfcoError::new(format!("unknown context type \"{}\"", name)))),
-        None => return Err(Box::new(InfcoError::new(String::from("no context type found"))))
+        Some(name) => return Err(InfcoError::new(&*format!("unknown context type \"{}\"", name)).into()),
+        None => return Err(InfcoError::new("no context type found").into())
     };
 
     for task in tasks {
@@ -69,11 +69,11 @@ async fn process_tasks_for_host(tasks: &Vec<Value>, host: &Value) -> Result<(), 
             },
             Some(name) => {
                 error!("unknown task type \"{}\"", name);
-                return Err(Box::new(InfcoError::new(format!("unknown task type \"{}\"", name))))
+                return Err(InfcoError::new(&*format!("unknown task type \"{}\"", name)).into())
             },
             None => {
                 error!("no task type found");
-                return Err(Box::new(InfcoError::new(String::from("no task type found"))))
+                return Err(InfcoError::new("no task type found").into())
             }
         }
     }

@@ -7,9 +7,9 @@ pub struct InfcoError {
 }
 
 impl InfcoError {
-    pub fn new(description: String) -> InfcoError {
+    pub fn new(description: &str) -> InfcoError {
         InfcoError {
-            description: description
+            description: description.into()
         }
     }
 }

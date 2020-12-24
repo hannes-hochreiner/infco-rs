@@ -59,7 +59,7 @@ impl Session {
     
         match output.status.success() {
             true => Ok(String::from_utf8(output.stdout)?),
-            false => Err(Box::new(LocalError::new(err_string)))
+            false => Err(LocalError::new(&*err_string).into())
         }
     }
 }
