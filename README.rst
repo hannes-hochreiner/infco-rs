@@ -1,5 +1,8 @@
 .. image:: https://github.com/hannes-hochreiner/infco-rs/workflows/CI/badge.svg
 
+This repository is archived.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 InfCo-RS
 ~~~~~~~~
 
